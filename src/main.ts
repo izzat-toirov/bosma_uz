@@ -15,7 +15,7 @@ async function start() {
 
     // CORS sozlamalari
     app.enableCors({
-      origin: true,
+      origin: process.env.FRONTEND_URL || true, // In production, replace with your frontend URL
       methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
       credentials: true,
     });
@@ -64,7 +64,9 @@ async function start() {
     // Swagger - API hujjatlari
     const config = new DocumentBuilder()
       .setTitle('Bosma.uz - Print-on-Demand Platform')
-      .setDescription('RESTful API for Bosma.uz platform with design customization and admin dashboard')
+      .setDescription(
+        'RESTful API for Bosma.uz platform with design customization and admin dashboard',
+      )
       .setVersion('1.0')
       .addBearerAuth()
       .build();
@@ -80,8 +82,8 @@ async function start() {
     await app.listen(PORT, '0.0.0.0', () => {
       console.log(`✅ Server is running on port: ${PORT}`);
       console.log(`📚 Swagger: http://0.0.0.0:${PORT}/api/docs`);
+      console.log(`📚 Swagger: http://localhost:${PORT}/api/docs`);
     });
-
   } catch (error) {
     console.error('❌ Server startup error:', error);
   }

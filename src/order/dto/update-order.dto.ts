@@ -7,6 +7,8 @@ import {
   IsOptional,
   ValidateNested,
   IsPhoneNumber,
+  IsObject,
+  IsArray,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
@@ -14,80 +16,92 @@ import { OrderStatus, PaymentStatus } from '@prisma/client';
 import { CreateOrderItemRequestDto } from './create-order.dto';
 
 export class UpdateOrderDto {
-  @ApiPropertyOptional({
-    description: 'User ID',
-    example: 1,
-    type: Number,
-  })
-  @IsOptional()
-  @IsInt()
-  @Min(1)
-  userId?: number;
-
-  @ApiPropertyOptional({
-    description: 'Customer name',
-    example: 'John Doe',
-  })
-  @IsOptional()
-  @IsString()
-  customerName?: string;
-
-  @ApiPropertyOptional({
-    description: 'Customer phone number in Uzbekistan format',
-    example: '+998901234567',
-  })
-  @IsOptional()
-  @IsPhoneNumber('UZ')
-  customerPhone?: string;
-
-  @ApiPropertyOptional({
-    description: 'Region for delivery',
-    example: 'Tashkent',
-  })
-  @IsOptional()
-  @IsString()
-  region?: string;
-
-  @ApiPropertyOptional({
-    description: 'Full delivery address',
-    example: "Tashkent, Navoiy ko'chasi, 5-uy",
-  })
-  @IsOptional()
-  @IsString()
-  address?: string;
-
-  @ApiPropertyOptional({
-    description: 'Total price of the order',
-    example: 99.99,
-    minimum: 0,
-  })
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  totalPrice?: number;
-
-  @ApiPropertyOptional({
-    description: 'Order status',
-    enum: OrderStatus,
-  })
-  @IsOptional()
-  @IsEnum(OrderStatus)
-  status?: OrderStatus;
-
-  @ApiPropertyOptional({
-    description: 'Payment status',
-    enum: PaymentStatus,
-  })
-  @IsOptional()
-  @IsEnum(PaymentStatus)
-  paymentStatus?: PaymentStatus;
-
-  @ApiPropertyOptional({
-    description: 'Array of order items with design information',
-    type: [CreateOrderItemRequestDto],
-  })
-  @IsOptional()
-  @ValidateNested({ each: true })
-  @Type(() => CreateOrderItemRequestDto)
-  items?: CreateOrderItemRequestDto[];
+ @ApiProperty({ example: 1 })
+   @IsNumber()
+   @Min(1)
+   variantId: number;
+ 
+   @ApiProperty({ example: 2 })
+   @IsNumber()
+   @Min(1)
+   quantity: number;
+ 
+   @ApiProperty({ example: 49.99 })
+   @IsNumber()
+   @Min(0)
+   price: number;
+ 
+   // DIQQAT: JSONda yuborayotgan bo'lsangiz, bu yerda ham bo'lishi kerak yoki JSONdan olib tashlash kerak
+   @IsOptional()
+   @IsNumber()
+   orderId?: number;
+ 
+   @ApiPropertyOptional({ type: Object })
+   @IsOptional()
+   @IsObject() // Obyekt ekanligini tasdiqlash
+   frontDesign?: any;
+ 
+   @IsOptional()
+   @IsString()
+   frontPreviewUrl?: string;
+ 
+   @ApiPropertyOptional({ type: Object })
+   @IsOptional()
+   @IsObject()
+   backDesign?: any;
+ 
+   @IsOptional()
+   @IsString()
+   backPreviewUrl?: string;
+ 
+   @IsOptional()
+   @IsString()
+   finalPrintFile?: string;
+ }
+ 
+ export class CreateOrderDto {
+   @ApiPropertyOptional({ example: 'John Doe' })
+   @IsString()
+   customerName: string;
+ 
+   @ApiProperty({ example: '+998901234567' })
+   @IsPhoneNumber('UZ')
+   customerPhone: string;
+ 
+   @ApiProperty({ example: 'Tashkent' })
+   @IsString()
+   region: string;
+ 
+   @ApiProperty({ example: "Navoiy ko'chasi" })
+   @IsString()
+   address: string;
+ 
+   @ApiProperty({ example: 99.99 })
+   @IsNumber()
+   @Min(0)
+   totalPrice: number;
+ 
+   @ApiPropertyOptional({
+     description: 'Order status',
+     enum: OrderStatus,
+     default: OrderStatus.PENDING,
+   })
+   @IsOptional()
+   @IsEnum(OrderStatus)
+   status?: OrderStatus = OrderStatus.PENDING;
+ 
+   @ApiPropertyOptional({
+     description: 'Payment status',
+     enum: PaymentStatus,
+     default: PaymentStatus.UNPAID,
+   })
+   @IsOptional()
+   @IsEnum(PaymentStatus)
+   paymentStatus?: PaymentStatus = PaymentStatus.UNPAID;
+ 
+   @ApiProperty({ type: [CreateOrderItemRequestDto] })
+   @IsArray()
+   @ValidateNested({ each: true }) // Ichki obyektlarni tekshirish uchun shart!
+   @Type(() => CreateOrderItemRequestDto) // Class-transformer uchun shart!
+   items: CreateOrderItemRequestDto[];
 }

@@ -9,6 +9,7 @@ import { NotificationModule } from '../notification/notification.module';
 import { CartModule } from '../cart/cart.module';
 import { AuthModule } from '../auth/auth.module';
 import { SecurityModule } from '../common/security/security.module';
+import { MailModule } from '../mail/mail.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { SecurityModule } from '../common/security/security.module';
     ConfigModule,
     AuthModule,
     SecurityModule,
+    MailModule,
   ],
   controllers: [OrderController],
   providers: [OrderService],

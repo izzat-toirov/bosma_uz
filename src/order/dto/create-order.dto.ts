@@ -1,5 +1,5 @@
 import {
-  IsInt,
+  IsArray,
   IsString,
   IsEnum,
   IsNumber,
@@ -7,136 +7,74 @@ import {
   IsOptional,
   ValidateNested,
   IsPhoneNumber,
+  IsObject,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { OrderStatus, PaymentStatus } from '@prisma/client';
 
 export class CreateOrderItemRequestDto {
-  @ApiProperty({
-    description: 'ID of the product variant',
-    example: 1,
-    type: Number,
-  })
-  @IsInt()
+  @ApiProperty({ example: 1 })
+  @IsNumber()
   @Min(1)
   variantId: number;
 
-  @ApiProperty({
-    description: 'Quantity of the item',
-    example: 2,
-    minimum: 1,
-  })
-  @IsInt()
+  @ApiProperty({ example: 2 })
+  @IsNumber()
   @Min(1)
   quantity: number;
 
-  @ApiProperty({
-    description: 'Price of the item',
-    example: 49.99,
-    minimum: 0,
-  })
+  @ApiProperty({ example: 49.99 })
   @IsNumber()
   @Min(0)
   price: number;
 
-  @ApiPropertyOptional({
-    description: 'Front design coordinates and properties',
-    example: {
-      x: 100,
-      y: 200,
-      scale: 1.2,
-      rotation: 45,
-      imageUrl: 'https://example.com/design.png',
-    },
-    type: Object,
-  })
+  // DIQQAT: JSONda yuborayotgan bo'lsangiz, bu yerda ham bo'lishi kerak yoki JSONdan olib tashlash kerak
   @IsOptional()
+  @IsNumber()
+  orderId?: number;
+
+  @ApiPropertyOptional({ type: Object })
+  @IsOptional()
+  @IsObject() // Obyekt ekanligini tasdiqlash
   frontDesign?: any;
 
-  @ApiPropertyOptional({
-    description: 'Front design preview URL',
-    example: 'https://example.com/preview-front.jpg',
-  })
   @IsOptional()
   @IsString()
   frontPreviewUrl?: string;
 
-  @ApiPropertyOptional({
-    description: 'Back design coordinates and properties',
-    example: {
-      x: 150,
-      y: 250,
-      scale: 1.0,
-      rotation: 0,
-      imageUrl: 'https://example.com/back-design.png',
-    },
-    type: Object,
-  })
+  @ApiPropertyOptional({ type: Object })
   @IsOptional()
+  @IsObject()
   backDesign?: any;
 
-  @ApiPropertyOptional({
-    description: 'Back design preview URL',
-    example: 'https://example.com/preview-back.jpg',
-  })
   @IsOptional()
   @IsString()
   backPreviewUrl?: string;
 
-  @ApiPropertyOptional({
-    description: 'Final print file URL',
-    example: 'https://example.com/final-print.jpg',
-  })
   @IsOptional()
   @IsString()
   finalPrintFile?: string;
 }
 
 export class CreateOrderDto {
-  @ApiPropertyOptional({
-    description: 'User ID (will be auto-assigned if not provided)',
-    example: 1,
-    type: Number,
-  })
-  @IsOptional()
-  @IsInt()
-  @Min(1)
-  userId?: number;
-
-  @ApiProperty({
-    description: 'Customer name',
-    example: 'John Doe',
-  })
+  @ApiPropertyOptional({ example: 'John Doe' })
   @IsString()
   customerName: string;
 
-  @ApiProperty({
-    description: 'Customer phone number in Uzbekistan format',
-    example: '+998901234567',
-  })
+  @ApiProperty({ example: '+998901234567' })
   @IsPhoneNumber('UZ')
   customerPhone: string;
 
-  @ApiProperty({
-    description: 'Region for delivery',
-    example: 'Tashkent',
-  })
+  @ApiProperty({ example: 'Tashkent' })
   @IsString()
   region: string;
 
-  @ApiProperty({
-    description: 'Full delivery address',
-    example: "Tashkent, Navoiy ko'chasi, 5-uy",
-  })
+  @ApiProperty({ example: "Navoiy ko'chasi" })
   @IsString()
   address: string;
 
-  @ApiProperty({
-    description: 'Total price of the order',
-    example: 99.99,
-    minimum: 0,
-  })
+  @ApiProperty({ example: 99.99 })
   @IsNumber()
   @Min(0)
   totalPrice: number;
@@ -159,11 +97,9 @@ export class CreateOrderDto {
   @IsEnum(PaymentStatus)
   paymentStatus?: PaymentStatus = PaymentStatus.UNPAID;
 
-  @ApiProperty({
-    description: 'Array of order items with design information',
-    type: [CreateOrderItemRequestDto],
-  })
-  @ValidateNested({ each: true })
-  @Type(() => CreateOrderItemRequestDto)
+  @ApiProperty({ type: [CreateOrderItemRequestDto] })
+  @IsArray()
+  @ValidateNested({ each: true }) // Ichki obyektlarni tekshirish uchun shart!
+  @Type(() => CreateOrderItemRequestDto) // Class-transformer uchun shart!
   items: CreateOrderItemRequestDto[];
 }

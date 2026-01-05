@@ -10,8 +10,8 @@ export class MailService {
     // Nodemailer transporter configuration using environment variables
     this.transporter = nodemailer.createTransport({
       host: this.configService.get<string>('MAIL_HOST', 'smtp.gmail.com'),
-      port: this.configService.get<number>('MAIL_PORT', 587),
-      secure: this.configService.get<boolean>('MAIL_SECURE', false), // true for 465, false for other ports
+      port: this.configService.get<number>('MAIL_PORT', 465),
+      secure: this.configService.get<boolean>('MAIL_SECURE', true), // true for 465, false for other ports
       auth: {
         user:
           this.configService.get<string>('MAIL_USER') ||
@@ -20,6 +20,8 @@ export class MailService {
           this.configService.get<string>('MAIL_PASS') ||
           this.configService.get<string>('smtp_password'),
       },
+      connectionTimeout: 10000, // 10 seconds
+      greetingTimeout: 10000, // 10 seconds
     });
   }
 

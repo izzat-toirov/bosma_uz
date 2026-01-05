@@ -32,11 +32,10 @@ export class OrderController {
   @ApiBearerAuth()
   @HttpCode(HttpStatus.CREATED)
   create(@Body() createOrderDto: CreateOrderDto, @Request() req) {
-    // For regular users, ensure they can only create orders for themselves
-    if (req.user.role === Role.USER) {
-      createOrderDto.userId = req.user.id;
-    }
-    return this.orderService.create(createOrderDto);
+    // Extract userId from JWT token, never from request body
+    // This ensures users can only create orders for their own account
+    const userId = req.user.id;
+    return this.orderService.create(createOrderDto, userId);
   }
 
   @Post('checkout')

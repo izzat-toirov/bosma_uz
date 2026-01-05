@@ -38,10 +38,10 @@ export class OrderItemService {
       data: {
         ...createOrderItemDto,
         frontDesign: createOrderItemDto.frontDesign
-          ? JSON.stringify(createOrderItemDto.frontDesign)
+          ? createOrderItemDto.frontDesign
           : undefined,
         backDesign: createOrderItemDto.backDesign
-          ? JSON.stringify(createOrderItemDto.backDesign)
+          ? createOrderItemDto.backDesign
           : undefined,
       },
     });
@@ -69,16 +69,8 @@ export class OrderItemService {
       },
     });
 
-    // Parse JSON fields back to objects
-    return orderItems.map((item) => ({
-      ...item,
-      frontDesign: item.frontDesign
-        ? JSON.parse(item.frontDesign as string)
-        : null,
-      backDesign: item.backDesign
-        ? JSON.parse(item.backDesign as string)
-        : null,
-    }));
+    // No need to parse JSON fields since Prisma handles Json type automatically
+    return orderItems;
   }
 
   async findOne(id: number) {
@@ -103,16 +95,8 @@ export class OrderItemService {
       throw new NotFoundException(`OrderItem with ID ${id} not found`);
     }
 
-    // Parse JSON fields back to objects
-    return {
-      ...orderItem,
-      frontDesign: orderItem.frontDesign
-        ? JSON.parse(orderItem.frontDesign as string)
-        : null,
-      backDesign: orderItem.backDesign
-        ? JSON.parse(orderItem.backDesign as string)
-        : null,
-    };
+    // No need to parse JSON fields since Prisma handles Json type automatically
+    return orderItem;
   }
 
   async update(id: number, updateOrderItemDto: UpdateOrderItemDto) {
@@ -155,24 +139,16 @@ export class OrderItemService {
       data: {
         ...updateOrderItemDto,
         frontDesign: updateOrderItemDto.frontDesign
-          ? JSON.stringify(updateOrderItemDto.frontDesign)
+          ? updateOrderItemDto.frontDesign
           : undefined,
         backDesign: updateOrderItemDto.backDesign
-          ? JSON.stringify(updateOrderItemDto.backDesign)
+          ? updateOrderItemDto.backDesign
           : undefined,
       },
     });
 
-    // Parse JSON fields back to objects
-    return {
-      ...updatedOrderItem,
-      frontDesign: updatedOrderItem.frontDesign
-        ? JSON.parse(updatedOrderItem.frontDesign as string)
-        : null,
-      backDesign: updatedOrderItem.backDesign
-        ? JSON.parse(updatedOrderItem.backDesign as string)
-        : null,
-    };
+    // No need to parse JSON fields since Prisma handles Json type automatically
+    return updatedOrderItem;
   }
 
   async remove(id: number) {

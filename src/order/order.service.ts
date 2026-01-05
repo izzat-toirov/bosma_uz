@@ -5,14 +5,18 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { Order } from '@prisma/client';
+import { Order, OrderStatus, PaymentStatus } from '@prisma/client';
 import { Prisma } from '@prisma/client';
+import { MailService } from '../mail/mail.service';
 
 @Injectable()
 export class OrderService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private mailService: MailService,
+  ) {}
 
-  async create(orderData: any) {
+  async create(orderData: any, userId: number) {
     // Calculate total price from order items
     const totalPrice = orderData.items.reduce((sum: number, item: any) => {
       return sum + item.price * item.quantity;
@@ -22,9 +26,9 @@ export class OrderService {
     const result = await this.prisma.$transaction(async (tx) => {
       const order = await tx.order.create({
         data: {
-          userId: orderData.userId,
-          status: 'PENDING' as any,
-          paymentStatus: 'PENDING' as any,
+          userId, // Use the userId from JWT token, not from orderData
+          status: orderData.status || 'PENDING', // Use correct enum value
+          paymentStatus: orderData.paymentStatus || 'UNPAID', // Use correct enum value
           totalPrice,
           customerName: orderData.customerName,
           customerPhone: orderData.customerPhone,
@@ -32,9 +36,9 @@ export class OrderService {
           address: orderData.address || orderData.deliveryAddress || 'Unknown',
           items: {
             create: orderData.items.map((item: any) => ({
-              variantId: item.variantId,
-              quantity: item.quantity,
-              price: item.price,
+              variantId: Number(item.variantId), // Ensure number conversion
+              quantity: Number(item.quantity), // Ensure number conversion
+              price: Number(item.price), // Ensure number conversion
               frontDesign: item.frontDesign || undefined,
               backDesign: item.backDesign || undefined,
               frontPreviewUrl: item.frontPreviewUrl,
@@ -180,7 +184,7 @@ export class OrderService {
     let totalPrice = undefined;
     if (updateData.items) {
       totalPrice = updateData.items.reduce((sum: number, item: any) => {
-        return sum + item.price * item.quantity;
+        return sum + Number(item.price) * Number(item.quantity); // Ensure number conversion
       }, 0);
     }
 
@@ -193,6 +197,9 @@ export class OrderService {
     if (updatePayload.items) {
       delete updatePayload.items;
     }
+
+    // Ensure userId cannot be changed during update
+    delete updatePayload.userId;
 
     const order = await this.prisma.order.update({
       where: { id },
@@ -213,9 +220,9 @@ export class OrderService {
       await this.prisma.orderItem.createMany({
         data: updateData.items.map((item: any) => ({
           orderId: id,
-          variantId: item.variantId,
-          quantity: item.quantity,
-          price: item.price,
+          variantId: Number(item.variantId), // Ensure number conversion
+          quantity: Number(item.quantity), // Ensure number conversion
+          price: Number(item.price), // Ensure number conversion
           frontDesign: item.frontDesign || undefined,
           backDesign: item.backDesign || undefined,
           frontPreviewUrl: item.frontPreviewUrl,
@@ -278,18 +285,32 @@ export class OrderService {
       throw new BadRequestException('Cart is empty');
     }
 
+    // Validate relations
+    for (const item of cart.items) {
+      if (!item.variant) {
+        throw new BadRequestException(
+          `Variant with ID ${item.variantId} not found`,
+        );
+      }
+    }
+
     // Calculate total price
     const totalPrice = cart.items.reduce((sum, item) => {
       return sum + item.variant.price * item.quantity;
     }, 0);
 
+    // Validate total price is not zero or negative
+    if (totalPrice <= 0) {
+      throw new BadRequestException('Total price must be greater than zero');
+    }
+
     // Create order in a transaction
-    return await this.prisma.$transaction(async (tx) => {
-      const order = await tx.order.create({
+    const order = await this.prisma.$transaction(async (tx) => {
+      const createdOrder = await tx.order.create({
         data: {
           userId,
-          status: 'PENDING' as any,
-          paymentStatus: 'PENDING' as any,
+          status: 'PENDING', // Use correct enum value
+          paymentStatus: 'UNPAID', // Use correct enum value
           totalPrice,
           customerName: shippingDetails.customerName,
           customerPhone: shippingDetails.customerPhone,
@@ -300,9 +321,9 @@ export class OrderService {
             'Unknown',
           items: {
             create: cart.items.map((item) => ({
-              variantId: item.variantId,
-              quantity: item.quantity,
-              price: item.variant.price,
+              variantId: Number(item.variantId), // Ensure number conversion
+              quantity: Number(item.quantity), // Ensure number conversion
+              price: Number(item.variant.price), // Ensure number conversion
               frontDesign: item.frontDesign || undefined,
               backDesign: item.backDesign || undefined,
               frontPreviewUrl: item.frontPreviewUrl,
@@ -320,6 +341,14 @@ export class OrderService {
               },
             },
           },
+          user: {
+            select: {
+              id: true,
+              fullName: true,
+              email: true,
+              phone: true,
+            },
+          },
         },
       });
 
@@ -328,8 +357,34 @@ export class OrderService {
         where: { cartId: cart.id },
       });
 
-      return order;
+      return createdOrder;
     });
+
+    // Send order confirmation email to the user
+    if (order.user?.email) {
+      try {
+        await this.mailService.sendSmsToMail(
+          order.user.email,
+          'Order Confirmation',
+          `Your order #${order.id} has been placed successfully. Total: $${order.totalPrice}. We will process your order soon.`,
+          `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #333;">Order Confirmation</h2>
+            <p>Dear ${order.user.fullName},</p>
+            <p>Your order #${order.id} has been placed successfully.</p>
+            <p><strong>Total Amount:</strong> $${order.totalPrice}</p>
+            <p><strong>Status:</strong> ${order.status}</p>
+            <p>We will process your order soon. Thank you for shopping with us!</p>
+            <hr style="margin: 20px 0;">
+            <p style="font-size: 12px; color: #666;">This is an automated message, please do not reply to this email.</p>
+          </div>`,
+        );
+      } catch (emailError) {
+        console.error('Failed to send order confirmation email:', emailError);
+        // Don't throw an error as this shouldn't fail the order creation
+      }
+    }
+
+    return order;
   }
 
   async findUserOrders(userId: number) {

@@ -14,7 +14,7 @@ import {
 import { OrderItemService } from './order-item.service';
 import { CreateOrderItemRequestDto } from './dto/create-order-item.dto';
 import { UpdateOrderItemDto } from './dto/update-order-item.dto';
-import { JwtGuard } from '../common/guards/jwt.guard';
+import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { Role } from '@prisma/client';
@@ -26,7 +26,7 @@ export class OrderItemController {
 
   @Post()
   @Roles(Role.ADMIN, Role.SUPER_ADMIN)
-  @UseGuards(JwtGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @ApiBearerAuth()
   @HttpCode(HttpStatus.CREATED)
   create(@Body() createOrderItemDto: CreateOrderItemRequestDto) {
@@ -35,7 +35,7 @@ export class OrderItemController {
 
   @Get()
   @Roles(Role.ADMIN, Role.SUPER_ADMIN)
-  @UseGuards(JwtGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
   findAll(@Query('orderId') orderId?: string) {
@@ -44,7 +44,7 @@ export class OrderItemController {
 
   @Get(':id')
   @Roles(Role.USER, Role.ADMIN, Role.SUPER_ADMIN)
-  @UseGuards(JwtGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
   findOne(@Param('id') id: string) {
@@ -53,7 +53,7 @@ export class OrderItemController {
 
   @Patch(':id')
   @Roles(Role.ADMIN, Role.SUPER_ADMIN)
-  @UseGuards(JwtGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
   update(
@@ -65,7 +65,7 @@ export class OrderItemController {
 
   @Delete(':id')
   @Roles(Role.ADMIN, Role.SUPER_ADMIN)
-  @UseGuards(JwtGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
   remove(@Param('id') id: string) {
