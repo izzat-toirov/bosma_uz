@@ -10,6 +10,7 @@ import { UserService } from './user/user.service';
 
 async function start() {
   try {
+    const PORT = process.env.PORT || 3030;
     const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
     // Security middlewares
@@ -78,8 +79,6 @@ async function start() {
     const userService = app.get(UserService);
     await userService.createSuperAdmin();
 
-    // PORT o'zgaruvchisi tepada aniqlangan bo'lishi kerak
-    const PORT = process.env.PORT || 3030;
 
     await app.listen(PORT, '0.0.0.0', () => {
       console.log(`✅ Server is running on port: ${PORT}`);
