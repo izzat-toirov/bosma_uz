@@ -10,18 +10,17 @@ import { UserService } from './user/user.service';
 
 async function start() {
   try {
-    // Render uchun PORT o'zgaruvchisi
     const PORT = process.env.PORT || 3030;
     const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
-    // CORS sozlamalari (Frontend ulanishi uchun juda muhim)
+    // CORS sozlamalari
     app.enableCors({
-      origin: true, 
+      origin: true,
       methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
       credentials: true,
     });
 
-    // Security middlewares
+    // Xavfsizlik uchun Helmet
     app.use(
       helmet({
         contentSecurityPolicy: {
@@ -36,7 +35,7 @@ async function start() {
       }),
     );
 
-    // Global validation pipe
+    // Ma'lumotlarni tekshirish (Validation)
     app.useGlobalPipes(
       new ValidationPipe({
         whitelist: true,
@@ -55,16 +54,14 @@ async function start() {
     );
 
     app.setGlobalPrefix('api');
-
-    // Apply global exception filter
     app.useGlobalFilters(new HttpExceptionFilter());
 
-    // Static fayllar (Uploads)
+    // Rasmlar va fayllar uchun papka
     app.useStaticAssets(join(__dirname, '../../uploads'), {
       prefix: '/uploads',
     });
 
-    // Swagger Documentation
+    // Swagger - API hujjatlari
     const config = new DocumentBuilder()
       .setTitle('Bosma.uz - Print-on-Demand Platform')
       .setDescription('RESTful API for Bosma.uz platform with design customization and admin dashboard')
@@ -75,20 +72,19 @@ async function start() {
     const document = SwaggerModule.createDocument(app, config);
     SwaggerModule.setup('api/docs', app, document);
 
-    // Start-up logic (Superadmin yaratish)
+    // Super Admin yaratish
     const userService = app.get(UserService);
     await userService.createSuperAdmin();
 
-    // SERVERNI ISHGA TUSHIRISH
+    // Serverni ishga tushirish (Render uchun 0.0.0.0 muhim)
     await app.listen(PORT, '0.0.0.0', () => {
       console.log(`✅ Server is running on port: ${PORT}`);
       console.log(`📚 Swagger: http://0.0.0.0:${PORT}/api/docs`);
     });
 
   } catch (error) {
-    console.error('❌ Error during server startup:', error);
+    console.error('❌ Server startup error:', error);
   }
 }
 
-// Funksiyani faqat BIR MARTA chaqiring
 start();
