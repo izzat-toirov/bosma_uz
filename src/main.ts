@@ -14,10 +14,17 @@ async function start() {
     const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
     // CORS sozlamalari
+    const allowedOrigins = [
+      'http://localhost:5173',
+      'http://localhost:3000',
+      process.env.FRONTEND_URL,
+    ].filter((origin): origin is string => !!origin); // Type Guard: undefined qiymatlarni filtrlaydi va faqat string qoldiradi
+
     app.enableCors({
-      origin: process.env.FRONTEND_URL || true, // In production, replace with your frontend URL
+      origin: allowedOrigins,
       methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
       credentials: true,
+      allowedHeaders: 'Content-Type, Accept, Authorization',
     });
 
     // Xavfsizlik uchun Helmet
