@@ -12,10 +12,12 @@ import {
   Request,
   ParseIntPipe,
   ForbiddenException,
+  Query,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { BaseQueryDto } from '../common/dto/base-query.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -40,8 +42,16 @@ export class UserController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
-  findAll() {
-    return this.userService.findAll();
+  findAll(@Query() query: BaseQueryDto) {
+    return this.userService.findAll(
+      query.page,
+      query.limit,
+      query.sortBy,
+      query.order?.toLowerCase() as 'asc' | 'desc',
+      query.role,
+      query.isActive,
+      query.search,
+    );
   }
 
   @Get(':id')

@@ -7,11 +7,16 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import helmet from 'helmet';
 import { ValidationPipe, BadRequestException } from '@nestjs/common';
 import { UserService } from './user/user.service';
+import * as express from 'express';
 
 async function start() {
   try {
     const PORT = process.env.PORT || 3030;
     const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+    // Set payload size limits to handle large requests
+    app.use(express.json({ limit: '50mb' }));
+    app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
     // CORS sozlamalari
     const allowedOrigins = [

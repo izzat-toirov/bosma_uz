@@ -13,10 +13,12 @@ import {
   ParseIntPipe,
   ForbiddenException,
   UnauthorizedException,
+  Query,
 } from '@nestjs/common';
 import { OrderService } from './order.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
+import { BaseQueryDto } from '../common/dto/base-query.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -54,13 +56,21 @@ export class OrderController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
-  async findAll(@Request() req) {
+  async findAll(@Request() req, @Query() query: BaseQueryDto) {
     // Admins can view all orders, regular users can only view their own orders
     if (req.user.role === Role.USER) {
       return this.orderService.findUserOrders(req.user.id);
     } else {
       // Admins can see all orders
-      return this.orderService.findAll();
+      return this.orderService.findAll(
+        query.page,
+        query.limit,
+        query.sortBy,
+        query.order?.toLowerCase() as 'asc' | 'desc',
+        query.status,
+        query.paymentStatus,
+        query.search,
+      );
     }
   }
 

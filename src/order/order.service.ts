@@ -27,8 +27,8 @@ export class OrderService {
       const order = await tx.order.create({
         data: {
           userId, // Use the userId from JWT token, not from orderData
-          status: orderData.status || 'PENDING', // Use correct enum value
-          paymentStatus: orderData.paymentStatus || 'UNPAID', // Use correct enum value
+          status: orderData.status || OrderStatus.PENDING, // Use correct enum value
+          paymentStatus: orderData.paymentStatus || PaymentStatus.UNPAID, // Use correct enum value
           totalPrice,
           customerName: orderData.customerName,
           customerPhone: orderData.customerPhone,
@@ -309,8 +309,8 @@ export class OrderService {
       const createdOrder = await tx.order.create({
         data: {
           userId,
-          status: 'PENDING', // Use correct enum value
-          paymentStatus: 'UNPAID', // Use correct enum value
+          status: OrderStatus.PENDING, // Use correct enum value
+          paymentStatus: PaymentStatus.UNPAID, // Use correct enum value
           totalPrice,
           customerName: shippingDetails.customerName,
           customerPhone: shippingDetails.customerPhone,

@@ -11,10 +11,12 @@ import {
   UseGuards,
   ParseIntPipe,
   ForbiddenException,
+  Query,
 } from '@nestjs/common';
 import { ProductService } from './product.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
+import { BaseQueryDto } from '../common/dto/base-query.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -36,8 +38,15 @@ export class ProductController {
 
   @Get()
   @HttpCode(HttpStatus.OK)
-  findAll() {
-    return this.productService.findAll();
+  findAll(@Query() query: BaseQueryDto) {
+    return this.productService.findAll(
+      query.page,
+      query.limit,
+      query.sortBy,
+      query.order?.toLowerCase() as 'asc' | 'desc',
+      query.category,
+      query.search,
+    );
   }
 
   @Get(':id')

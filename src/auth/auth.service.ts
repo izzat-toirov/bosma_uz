@@ -3,6 +3,7 @@ import {
   UnauthorizedException,
   BadRequestException,
   NotFoundException,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { UserService } from '../user/user.service';
 import { JwtService } from '@nestjs/jwt';
@@ -185,8 +186,15 @@ export class AuthService {
       otpExpires: otpExpires,
     });
 
-    // Send OTP via email using MailService
-    await this.mailService.sendOtp(dto.email, otpCode);
+    // Send OTP via email using MailService with error handling
+    try {
+      await this.mailService.sendOtp(dto.email, otpCode);
+    } catch (error) {
+      console.error('Email service failed to send OTP:', error);
+      throw new InternalServerErrorException(
+        'Email service failed to send OTP',
+      );
+    }
 
     return {
       message: 'OTP sent successfully. Please check your email.',
@@ -278,23 +286,23 @@ export class AuthService {
 
   // Reset password - must verify the OTP first, then allow password update and set 'isActive: true'
   async resetPassword(dto: ResetPasswordDto) {
-  const user = await this.userService.findByEmail(dto.email);
-  if (!user) {
-    throw new NotFoundException('User with this email not found');
+    const user = await this.userService.findByEmail(dto.email);
+    if (!user) {
+      throw new NotFoundException('User with this email not found');
+    }
+
+    // OTP tekshiruvlari (o'zgarishsiz qoladi...)
+    // ...
+
+    // ⚠️ DIQQAT: Bu yerda o'zingiz hash qilmang!
+    // Faqat userService.update ga uzating, u o'zi hash qiladi.
+    await this.userService.update(user.id, {
+      password: dto.newPassword, // <--- Shunchaki yangi parolni o'zini yuboring
+      isActive: true,
+      otpCode: null,
+      otpExpires: null,
+    });
+
+    return { message: 'Password reset successfully' };
   }
-
-  // OTP tekshiruvlari (o'zgarishsiz qoladi...)
-  // ...
-
-  // ⚠️ DIQQAT: Bu yerda o'zingiz hash qilmang!
-  // Faqat userService.update ga uzating, u o'zi hash qiladi.
-  await this.userService.update(user.id, {
-    password: dto.newPassword, // <--- Shunchaki yangi parolni o'zini yuboring
-    isActive: true,
-    otpCode: null,
-    otpExpires: null,
-  } as any);
-
-  return { message: 'Password reset successfully' };
-}
 }
