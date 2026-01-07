@@ -14,33 +14,35 @@ export class ProductService {
 
   private readonly allowedSortFields = new Set(['id', 'createdAt', 'name', 'category']);
 
-  async create(productData: any) {
-    const product = await this.prisma.product.create({
+  // ProductService.ts ichidagi create metodini shunday yangilang:
+async create(productData: any) {
+  return await this.prisma.$transaction(async (tx) => {
+    return await tx.product.create({
       data: {
-        ...productData,
+        name: productData.name,
+        description: productData.description,
+        category: productData.category,
         variants: {
-          create:
-            productData.variants?.map((variant: any) => ({
-              color: variant.color,
-              size: variant.size,
-              price: variant.price,
-              stock: variant.stock,
-              frontImage: variant.frontImage,
-              backImage: variant.backImage,
-              printAreaTop: variant.printAreaTop,
-              printAreaLeft: variant.printAreaLeft,
-              printAreaWidth: variant.printAreaWidth,
-              printAreaHeight: variant.printAreaHeight,
-            })) || [],
+          create: productData.variants?.map((v: any) => ({
+            color: v.color,
+            size: v.size,
+            price: v.price,
+            stock: v.stock,
+            frontImage: v.frontImage, // Rasmlar URL-larini Controllerda to'g'rilab olasiz
+            backImage: v.backImage,
+            printAreaTop: v.printAreaTop,
+            printAreaLeft: v.printAreaLeft,
+            printAreaWidth: v.printAreaWidth,
+            printAreaHeight: v.printAreaHeight,
+          })) || [],
         },
       },
-      include: {
-        variants: true,
-      },
+      include: { variants: true },
     });
-
-    return product;
-  }
+  }, {
+    timeout: 30000 // 30 soniya timeout qo'shildi
+  });
+}
 
   async findAll(
     page: number = 1,
