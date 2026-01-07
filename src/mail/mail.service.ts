@@ -5,20 +5,57 @@ import { ConfigService } from '@nestjs/config';
 @Injectable()
 export class MailService {
   private transporter;
+  private readonly fromAddress: string;
 
   constructor(private readonly configService: ConfigService) {
+    const host =
+      this.configService.get<string>('MAIL_HOST') ||
+      this.configService.get<string>('smtp_host') ||
+      'smtp.gmail.com';
+
+    const portRaw =
+      this.configService.get<string>('MAIL_PORT') ||
+      (this.configService.get<number>('MAIL_PORT') as any) ||
+      this.configService.get<string>('smtp_port') ||
+      '465';
+    const port = Number(portRaw);
+
+    const secureRaw =
+      this.configService.get<string>('MAIL_SECURE') ||
+      (this.configService.get<boolean>('MAIL_SECURE') as any) ||
+      this.configService.get<string>('smtp_secure');
+    const secure =
+      secureRaw === undefined || secureRaw === null
+        ? port === 465
+        : ['true', '1', 'yes'].includes(String(secureRaw).toLowerCase());
+
+    const user =
+      this.configService.get<string>('MAIL_USER') ||
+      this.configService.get<string>('smtp_user');
+    const pass =
+      this.configService.get<string>('MAIL_PASS') ||
+      this.configService.get<string>('smtp_password');
+
+    if (!user || !pass) {
+      throw new InternalServerErrorException(
+        'MAIL_USER/MAIL_PASS environment variables are not set',
+      );
+    }
+
+    this.fromAddress =
+      this.configService.get<string>('MAIL_FROM') ||
+      this.configService.get<string>('MAIL_USER') ||
+      this.configService.get<string>('smtp_user') ||
+      user;
+
     // Nodemailer transporter configuration using environment variables
     this.transporter = nodemailer.createTransport({
-      host: this.configService.get<string>('MAIL_HOST', 'smtp.gmail.com'),
-      port: this.configService.get<number>('MAIL_PORT', 465),
-      secure: this.configService.get<boolean>('MAIL_SECURE', true), // true for 465, false for other ports
+      host,
+      port,
+      secure, // true for 465, false for other ports
       auth: {
-        user:
-          this.configService.get<string>('MAIL_USER') ||
-          this.configService.get<string>('smtp_user'),
-        pass:
-          this.configService.get<string>('MAIL_PASS') ||
-          this.configService.get<string>('smtp_password'),
+        user,
+        pass,
       },
       connectionTimeout: 10000, // 10 seconds
       greetingTimeout: 10000, // 10 seconds
@@ -33,7 +70,7 @@ export class MailService {
   ) {
     try {
       await this.transporter.sendMail({
-        from: `"Verification" <${this.configService.get<string>('smtp_user')}>`,
+        from: `"Verification" <${this.fromAddress}>`,
         to: email,
         subject,
         text,

@@ -7,6 +7,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateAssetDto } from './dto/create-asset.dto';
 import { UpdateAssetDto } from './dto/update-asset.dto';
+import { AssetQueryDto } from './dto/asset-query.dto';
 import { SupabaseService } from '../supabase/supabase.service';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { SecurityService } from '../common/security/security.service';
@@ -18,6 +19,8 @@ export class AssetService {
     private supabaseService: SupabaseService,
     private securityService: SecurityService,
   ) {}
+
+  private readonly allowedSortFields = new Set(['id', 'createdAt']);
 
   async create(createAssetDto: CreateAssetDto) {
     try {
@@ -69,20 +72,42 @@ export class AssetService {
     }
   }
 
-  async findAll(userId: number) {
+  async findAll(userId: number, query?: AssetQueryDto) {
     try {
-      return await this.prisma.asset.findMany({
-        where: { userId },
-        include: {
-          user: {
-            select: {
-              id: true,
-              fullName: true,
-              email: true,
-            },
+      const page = query?.page ?? 1;
+      const limit = query?.limit ?? 10;
+      const skip = (page - 1) * limit;
+      const search = query?.search?.trim();
+
+      const safeSortBy = this.allowedSortFields.has(query?.sortBy ?? '') ? (query?.sortBy as string) : 'createdAt';
+      const sortOrder = (query?.order?.toLowerCase() as 'asc' | 'desc') ?? 'desc';
+
+      const whereClause: any = { userId };
+      if (search) {
+        whereClause.url = { contains: search, mode: 'insensitive' };
+      }
+
+      const [items, total] = await Promise.all([
+        this.prisma.asset.findMany({
+          where: whereClause,
+          skip,
+          take: limit,
+          orderBy: {
+            [safeSortBy]: sortOrder,
           },
+        }),
+        this.prisma.asset.count({ where: whereClause }),
+      ]);
+
+      return {
+        data: items,
+        meta: {
+          total,
+          page,
+          lastPage: Math.ceil(total / limit),
+          perPage: limit,
         },
-      });
+      };
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === 'P2025') {

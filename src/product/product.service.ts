@@ -12,6 +12,8 @@ import { Prisma } from '@prisma/client';
 export class ProductService {
   constructor(private prisma: PrismaService) {}
 
+  private readonly allowedSortFields = new Set(['id', 'createdAt', 'name', 'category']);
+
   async create(productData: any) {
     const product = await this.prisma.product.create({
       data: {
@@ -43,11 +45,12 @@ export class ProductService {
   async findAll(
     page: number = 1,
     limit: number = 10,
-    sortBy: string = 'id',
+    sortBy: string = 'createdAt',
     sortOrder: 'asc' | 'desc' = 'desc',
     category?: string,
     search?: string,
   ) {
+    const safeSortBy = this.allowedSortFields.has(sortBy) ? sortBy : 'createdAt';
     const skip = (page - 1) * limit;
 
     const whereClause: any = {};
@@ -72,7 +75,7 @@ export class ProductService {
       skip,
       take: limit,
       orderBy: {
-        [sortBy]: sortOrder,
+        [safeSortBy]: sortOrder,
       },
     });
 

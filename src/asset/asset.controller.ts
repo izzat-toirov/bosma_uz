@@ -15,10 +15,12 @@ import {
   ParseIntPipe,
   ForbiddenException,
   BadRequestException,
+  Query,
 } from '@nestjs/common';
 import { AssetService } from './asset.service';
 import { CreateAssetDto } from './dto/create-asset.dto';
 import { UpdateAssetDto } from './dto/update-asset.dto';
+import { AssetQueryDto } from './dto/asset-query.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
@@ -77,8 +79,8 @@ export class AssetController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
-  findAll(@Request() req) {
-    return this.assetService.findAll(req.user.id);
+  findAll(@Request() req, @Query() query: AssetQueryDto) {
+    return this.assetService.findAll(req.user.id, query);
   }
 
   @Get(':id')

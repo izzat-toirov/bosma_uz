@@ -10,10 +10,12 @@ import {
   HttpStatus,
   UseGuards,
   ParseIntPipe,
+  Query,
 } from '@nestjs/common';
 import { VariantService } from './variant.service';
 import { CreateVariantDto } from './dto/create-variant.dto';
 import { UpdateVariantDto } from './dto/update-variant.dto';
+import { VariantQueryDto } from './dto/variant-query.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -35,8 +37,16 @@ export class VariantController {
 
   @Get()
   @HttpCode(HttpStatus.OK)
-  findAll() {
-    return this.variantService.findAll();
+  findAll(@Query() query: VariantQueryDto) {
+    return this.variantService.findAll(
+      query.page,
+      query.limit,
+      query.sortBy,
+      query.order?.toLowerCase() as 'asc' | 'desc',
+      query.productId,
+      query.search,
+      query.size,
+    );
   }
 
   @Get(':id')

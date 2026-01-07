@@ -5,12 +5,14 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { Variant } from '@prisma/client';
+import { Size, Variant } from '@prisma/client';
 import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class VariantService {
   constructor(private prisma: PrismaService) {}
+
+  private readonly allowedSortFields = new Set(['id', 'price', 'stock']);
 
   async create(variantData: any) {
     // Validate that productId exists
@@ -44,13 +46,19 @@ export class VariantService {
     sortOrder: 'asc' | 'desc' = 'desc',
     productId?: number,
     search?: string,
+    size?: Size,
   ) {
+    const safeSortBy = this.allowedSortFields.has(sortBy) ? sortBy : 'id';
     const skip = (page - 1) * limit;
 
     const whereClause: any = {};
 
     if (productId) {
       whereClause.productId = productId;
+    }
+
+    if (size) {
+      whereClause.size = size;
     }
 
     if (search) {
@@ -65,7 +73,7 @@ export class VariantService {
       skip,
       take: limit,
       orderBy: {
-        [sortBy]: sortOrder,
+        [safeSortBy]: sortOrder,
       },
     });
 

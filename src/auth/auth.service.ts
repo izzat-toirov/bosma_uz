@@ -277,7 +277,14 @@ export class AuthService {
     });
 
     // Send OTP via email using MailService
-    await this.mailService.sendPasswordResetOtp(dto.email, otpCode);
+    try {
+      await this.mailService.sendPasswordResetOtp(dto.email, otpCode);
+    } catch (error) {
+      console.error('Email service failed to send password reset OTP:', error);
+      return {
+        message: 'If the email exists, an OTP has been sent to your email.',
+      };
+    }
 
     return {
       message: 'If the email exists, an OTP has been sent to your email.',

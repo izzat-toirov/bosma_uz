@@ -5,6 +5,9 @@ import {
   IsString,
   IsEnum,
   IsBoolean,
+  Min,
+  Max,
+  IsInt,
 } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
@@ -22,6 +25,7 @@ export class BaseQueryDto {
   })
   @IsOptional()
   @IsNumber()
+  @Min(1)
   @Type(() => Number)
   @Transform(({ value }) => parseInt(value, 10))
   page?: number = 1;
@@ -36,6 +40,8 @@ export class BaseQueryDto {
   })
   @IsOptional()
   @IsNumber()
+  @Min(1)
+  @Max(100)
   @Type(() => Number)
   @Transform(({ value }) => parseInt(value, 10))
   limit?: number = 10;
@@ -113,4 +119,16 @@ export class BaseQueryDto {
   @IsOptional()
   @IsString()
   category?: string;
+
+  @ApiPropertyOptional({
+    description: 'Filter by productId',
+    example: 1,
+    type: Number,
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Type(() => Number)
+  @Transform(({ value }) => parseInt(value, 10))
+  productId?: number;
 }
