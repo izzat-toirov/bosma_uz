@@ -14,35 +14,33 @@ export class ProductService {
 
   private readonly allowedSortFields = new Set(['id', 'createdAt', 'name', 'category']);
 
-  // ProductService.ts ichidagi create metodini shunday yangilang:
-async create(productData: any) {
-  return await this.prisma.$transaction(async (tx) => {
-    return await tx.product.create({
-      data: {
-        name: productData.name,
-        description: productData.description,
-        category: productData.category,
-        variants: {
-          create: productData.variants?.map((v: any) => ({
-            color: v.color,
-            size: v.size,
-            price: v.price,
-            stock: v.stock,
-            frontImage: v.frontImage, // Rasmlar URL-larini Controllerda to'g'rilab olasiz
-            backImage: v.backImage,
-            printAreaTop: v.printAreaTop,
-            printAreaLeft: v.printAreaLeft,
-            printAreaWidth: v.printAreaWidth,
-            printAreaHeight: v.printAreaHeight,
-          })) || [],
+  async create(productData: any) {
+    return await this.prisma.$transaction(async (tx) => {
+      return await tx.product.create({
+        data: {
+          name: productData.name,
+          description: productData.description,
+          category: productData.category,
+          // Boshqa kerakli maydonlarni shu yerda sanab o'ting
+          variants: {
+            create: productData.variants?.map((v: any) => ({
+              color: v.color,
+              size: v.size,
+              price: Number(v.price),
+              stock: Number(v.stock),
+              frontImage: v.frontImage,
+              backImage: v.backImage,
+              printAreaTop: Number(v.printAreaTop || 0),
+              printAreaLeft: Number(v.printAreaLeft || 0),
+              printAreaWidth: Number(v.printAreaWidth || 0),
+              printAreaHeight: Number(v.printAreaHeight || 0),
+            })) || [],
+          },
         },
-      },
-      include: { variants: true },
-    });
-  }, {
-    timeout: 30000 // 30 soniya timeout qo'shildi
-  });
-}
+        include: { variants: true },
+      });
+    }, { timeout: 30000 });
+  }
 
   async findAll(
     page: number = 1,

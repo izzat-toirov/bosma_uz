@@ -12,6 +12,9 @@ import {
   ParseIntPipe,
   ForbiddenException,
   Query,
+  UseInterceptors,
+  UploadedFiles,
+  BadRequestException,
 } from '@nestjs/common';
 import { ProductService } from './product.service';
 import { CreateProductDto } from './dto/create-product.dto';
@@ -22,6 +25,7 @@ import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { Role } from '@prisma/client';
 import { ApiBearerAuth } from '@nestjs/swagger';
+import { AnyFilesInterceptor } from '@nestjs/platform-express';
 
 @Controller('products')
 export class ProductController {
@@ -32,8 +36,47 @@ export class ProductController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @ApiBearerAuth()
   @HttpCode(HttpStatus.CREATED)
-  create(@Body() createProductDto: CreateProductDto) {
-    return this.productService.create(createProductDto);
+  @UseInterceptors(AnyFilesInterceptor())
+  async create(
+    @Body() body: Record<string, any>, // "any" o'rniga Record ishlatish xavfsizroq
+    @UploadedFiles() files: Array<Express.Multer.File>,
+  ) {
+    // 1. JSON parse mantiqi
+    let parsedVariants = [];
+    try {
+      parsedVariants =
+        typeof body.variants === 'string'
+          ? JSON.parse(body.variants)
+          : body.variants;
+    } catch (e) {
+      throw new BadRequestException('Invalid variants JSON format');
+    }
+
+    // 2. Fayllarni rasm maydonlariga joylash
+    const variantsWithImages = parsedVariants.map(
+      (variant: any, index: number) => {
+        const frontFile = files.find(
+          (f) => f.fieldname === `variant_front_${index}`,
+        );
+        const backFile = files.find(
+          (f) => f.fieldname === `variant_back_${index}`,
+        );
+
+        return {
+          ...variant,
+          frontImage: frontFile ? frontFile.path : variant.frontImage || null,
+          backImage: backFile ? backFile.path : variant.backImage || null,
+        };
+      },
+    );
+
+    // 3. Servicega yuborish
+    return this.productService.create({
+      name: body.name,
+      description: body.description,
+      category: body.category,
+      variants: variantsWithImages,
+    });
   }
 
   @Get()
