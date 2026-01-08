@@ -25,7 +25,7 @@ async function start() {
 
     const allowedOrigins = [
       'http://localhost:5173',
-      'https://your-vercel-domain.vercel.app',
+      'https://bosma-frontend.vercel.app',
       vercelOrigin,
     ].filter((origin): origin is string => !!origin);
 
