@@ -57,13 +57,12 @@ export class CartService {
     const variant = await this.prisma.variant.findUnique({ where: { id: variantId } });
     if (!variant) throw new NotFoundException('Product variant not found');
 
-    // Dizayni va varianti bir xil bo'lgan itemni qidiramiz
+    // Prisma JSON fields cannot be reliably compared using complex objects in `where`.
+    // We only dedupe by cartId + variantId; if a matching item exists, we increase quantity.
     const existingItem = await this.prisma.cartItem.findFirst({
       where: {
         cartId: cart.id,
         variantId,
-        frontDesign: designData?.frontDesign || null,
-        backDesign: designData?.backDesign || null,
       },
     });
 

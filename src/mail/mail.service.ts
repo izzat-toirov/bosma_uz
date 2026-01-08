@@ -79,6 +79,7 @@ export class MailService {
 
       return { message: `Successfully sent email to ${email}` };
     } catch (error) {
+      console.error('Email Error:', error);
       console.error('Mail yuborishda xatolik:', error.message);
 
       // Agar kunlik limit tugagan bo'lsa, foydalanuvchiga bildirish
@@ -121,6 +122,7 @@ export class MailService {
         message: 'Verification code sent successfully',
       };
     } catch (error) {
+      console.error('Email Error:', error);
       throw new InternalServerErrorException(
         error.message || 'Failed to send OTP',
       );
@@ -145,6 +147,7 @@ export class MailService {
         message: 'Password reset OTP sent successfully',
       };
     } catch (error) {
+      console.error('Email Error:', error);
       throw new InternalServerErrorException(
         error.message || 'Failed to send password reset OTP',
       );

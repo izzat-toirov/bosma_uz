@@ -17,10 +17,13 @@ export class OrderService {
   ) {}
 
   async create(orderData: any, userId: number) {
-    // Calculate total price from order items
-    const totalPrice = orderData.items.reduce((sum: number, item: any) => {
-      return sum + item.price * item.quantity;
-    }, 0);
+    // Prefer frontend-provided totalPrice; fall back to calculating from items if needed
+    const totalPriceFromBody = Number(orderData?.totalPrice);
+    const totalPrice = Number.isFinite(totalPriceFromBody) && totalPriceFromBody >= 0
+      ? totalPriceFromBody
+      : orderData.items.reduce((sum: number, item: any) => {
+          return sum + Number(item.price) * Number(item.quantity);
+        }, 0);
 
     // Use Prisma transaction for complex operations
     const result = await this.prisma.$transaction(async (tx) => {

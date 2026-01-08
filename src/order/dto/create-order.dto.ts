@@ -15,24 +15,23 @@ import { OrderStatus, PaymentStatus } from '@prisma/client';
 
 export class CreateOrderItemRequestDto {
   @ApiProperty({ example: 1 })
+  @Type(() => Number)
   @IsNumber()
   @Min(1)
   variantId: number;
 
   @ApiProperty({ example: 2 })
+  @Type(() => Number)
   @IsNumber()
   @Min(1)
   quantity: number;
 
-  @ApiProperty({ example: 49.99 })
+  @ApiPropertyOptional({ example: 49.99 })
+  @IsOptional()
+  @Type(() => Number)
   @IsNumber()
   @Min(0)
-  price: number;
-
-  // DIQQAT: JSONda yuborayotgan bo'lsangiz, bu yerda ham bo'lishi kerak yoki JSONdan olib tashlash kerak
-  @IsOptional()
-  @IsNumber()
-  orderId?: number;
+  price?: number;
 
   @ApiPropertyOptional({ type: Object })
   @IsOptional()
@@ -58,7 +57,7 @@ export class CreateOrderItemRequestDto {
 }
 
 export class CreateOrderDto {
-  @ApiPropertyOptional({ example: 'John Doe' })
+  @ApiProperty({ example: 'John Doe' })
   @IsString()
   customerName: string;
 
@@ -75,6 +74,7 @@ export class CreateOrderDto {
   address: string;
 
   @ApiProperty({ example: 99.99 })
+  @Type(() => Number)
   @IsNumber()
   @Min(0)
   totalPrice: number;

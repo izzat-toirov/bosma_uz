@@ -12,7 +12,7 @@ import {
 } from '@nestjs/common';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { AuthGuard } from '@nestjs/passport';
-import type { Response } from 'express';
+import type { Request as ExpressRequest, Response } from 'express';
 import { AuthService } from './auth.service';
 import { RegisterAuthDto } from './dto/register-auth.dto';
 import { LoginAuthDto } from './dto/login-auth.dto';
@@ -38,6 +38,22 @@ export class AuthController {
     private userService: UserService,
   ) {}
 
+  private getCookieValue(req: ExpressRequest | any, cookieName: string): string | undefined {
+    const cookieHeader = req?.headers?.cookie;
+    if (!cookieHeader || typeof cookieHeader !== 'string') return undefined;
+
+    const cookies = cookieHeader.split(';').map((c: string) => c.trim());
+    const pair = cookies.find((c: string) => c.startsWith(`${cookieName}=`));
+    if (!pair) return undefined;
+
+    const value = pair.substring(cookieName.length + 1);
+    try {
+      return decodeURIComponent(value);
+    } catch {
+      return value;
+    }
+  }
+
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
   async register(@Body() dto: RegisterAuthDto) {
@@ -60,6 +76,7 @@ export class AuthController {
       res.cookie('refreshToken', tokens.refreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
       });
       return {
@@ -121,15 +138,29 @@ export class AuthController {
   async refreshTokens(
     @Body() dto: RefreshTokenDto,
     @Res({ passthrough: true }) res: Response,
+    @Request() req: ExpressRequest | any,
   ) {
     try {
-      const tokens = await this.authService.refreshTokens(
-        parseInt(dto.refreshToken.split('.')[1], 10), // Extract user ID from JWT payload
-        dto.refreshToken,
-      );
+      const refreshToken = dto.refreshToken || this.getCookieValue(req, 'refreshToken');
+      if (!refreshToken) {
+        throw new Error('Refresh token not provided');
+      }
+
+      // Extract userId from JWT payload (base64url -> json)
+      const payloadPart = refreshToken.split('.')[1];
+      const payloadJson = Buffer.from(payloadPart, 'base64').toString('utf8');
+      const payload = JSON.parse(payloadJson) as { sub?: number };
+
+      const userId = payload?.sub;
+      if (!userId) {
+        throw new Error('Invalid refresh token payload');
+      }
+
+      const tokens = await this.authService.refreshTokens(userId, refreshToken);
       res.cookie('refreshToken', tokens.refreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
       });
       return {

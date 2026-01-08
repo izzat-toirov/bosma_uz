@@ -19,16 +19,27 @@ async function start() {
     app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
     // CORS sozlamalari
+    const vercelOrigin = process.env.FRONTEND_URL || process.env.VERCEL_FRONTEND_URL;
+    const allowAllOriginsForTesting =
+      String(process.env.CORS_ORIGIN_ALL || '').toLowerCase() === 'true';
+
     const allowedOrigins = [
       'http://localhost:5173',
-      'http://localhost:3000',
-      process.env.FRONTEND_URL,
-    ].filter((origin): origin is string => !!origin); // Type Guard: undefined qiymatlarni filtrlaydi va faqat string qoldiradi
+      'https://your-vercel-domain.vercel.app',
+      vercelOrigin,
+    ].filter((origin): origin is string => !!origin);
 
     app.enableCors({
-      origin: allowedOrigins,
-      methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+      origin: allowAllOriginsForTesting
+        ? true
+        : (origin, callback) => {
+            // Allow non-browser clients (curl/postman) where Origin might be undefined
+            if (!origin) return callback(null, true);
+            if (allowedOrigins.includes(origin)) return callback(null, true);
+            return callback(null, false);
+          },
       credentials: true,
+      methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
       allowedHeaders: 'Content-Type, Accept, Authorization',
     });
 
